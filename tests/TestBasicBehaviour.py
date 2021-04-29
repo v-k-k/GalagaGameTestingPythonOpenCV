@@ -1,11 +1,13 @@
-from pages import GalagaPage
 import pytest
-from game import Game
 
 
 class TestBasics:
 
-    def test_shit(self, init_driver):
-        game = Game(GalagaPage(init_driver))
-        game.run_game_loop()
+    @pytest.mark.initial
+    def test_initial_screen(self, tester):
+        tester.check_initial_screen()
+
+    @pytest.mark.simple
+    def test_simple(self, tester):
+        tester.check()
 

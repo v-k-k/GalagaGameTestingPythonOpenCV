@@ -2,7 +2,17 @@ import logging
 import inspect
 
 
-class Base:
+class MetaBase(type):
+    """Creates a singleton derived classes"""
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(MetaBase, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class Base(metaclass=MetaBase):
     _logger = None
 
     @property

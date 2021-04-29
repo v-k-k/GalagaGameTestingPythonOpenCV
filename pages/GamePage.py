@@ -1,8 +1,9 @@
 import base64
-
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
-from utils import Base, Image
+from selenium.webdriver.common.keys import Keys
+from utils import Base
+from utils.timeouts import Timeouts
 import numpy as np
 import constants
 import cv2
@@ -14,17 +15,15 @@ class GalagaPageLocators:
 
 
 class GalagaPage(Base):
-    """Singleton GamePage"""
-
     _driver = None
     _actions = None
     __instance = None
     __source = constants.GAME_SOURCE
 
-    def __new__(cls, *args, **kwargs):
-        if not cls.__instance:
-            cls.__instance = super(GalagaPage, cls).__new__(cls)
-        return cls.__instance
+    # def __new__(cls, *args, **kwargs):
+    #     if not cls.__instance:
+    #         cls.__instance = super(GalagaPage, cls).__new__(cls)
+    #     return cls.__instance
 
     def __init__(self, driver):
         if not self._driver:
@@ -42,7 +41,7 @@ class GalagaPage(Base):
         return self._actions
 
     @property
-    def __canvas_image(self):
+    def canvas_image(self):
         canvas_base64 = self._driver.execute_script(
             "return arguments[0].toDataURL('image/png').substring(21);", self.canvas
         )
@@ -54,14 +53,52 @@ class GalagaPage(Base):
         )
         return image, cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    @property
-    def image(self):
-        image, gray_image = self.__canvas_image
-        binary_image = cv2.Laplacian(gray_image[0:240, 0:205], cv2.CV_8UC1)
-        dilated_image = cv2.dilate(binary_image, np.ones((6, 6)))
-        _, thresh = cv2.threshold(dilated_image, constants.BINARY_THRESHOLD, 255, cv2.THRESH_BINARY)
-        components = cv2.connectedComponentsWithStats(thresh, constants.CONNECTIVITY, cv2.CV_32S)
-        centers = components[3]
-        retval, threshold = cv2.threshold(thresh, 200, 255, cv2.THRESH_BINARY_INV)
-        return Image(image, threshold)
+    def perform_double_enter_click(self):
+        self.logger.info("Performing double ENTER")
+        self.actions.pause(Timeouts.MID.value) \
+                    .send_keys(Keys.RETURN + Keys.RETURN) \
+                    .perform()
+        return self
 
+    def perform_canvas_click_with_enter(self):
+        self.logger.info("Performing canvas click with ENTER")
+        self.actions.move_to_element_with_offset(self.canvas, 50, 50) \
+                    .click(self.canvas) \
+                    .send_keys(Keys.RETURN) \
+                    .perform()
+        return self
+
+    def perform_single_enter_click(self):
+        self.logger.info("Performing single ENTER")
+        self.actions.pause(Timeouts.MID.value) \
+            .send_keys(Keys.RETURN) \
+            .perform()
+        return self
+
+    def press_left_x(self):
+        self.logger.info("Pressing down LEFT + X")
+        self.actions.key_down(Keys.LEFT) \
+                    .key_down('x') \
+                    .perform()
+        return self
+
+    def release_left_x(self):
+        self.logger.info("Releasing LEFT + X")
+        self.actions.key_up(Keys.LEFT) \
+                    .key_up('x') \
+                    .perform()
+        return self
+
+    def press_right_x(self):
+        self.logger.info("Pressing down RIGHT + X")
+        self.actions.key_down(Keys.RIGHT) \
+                    .key_down('x') \
+                    .perform()
+        return self
+
+    def release_right_x(self):
+        self.logger.info("Releasing RIGHT + X")
+        self.actions.key_up(Keys.RIGHT) \
+                    .key_up('x') \
+                    .perform()
+        return self
