@@ -8,6 +8,12 @@ class TestBasics:
         tester.check_initial_screen()
 
     @pytest.mark.simple
-    def test_simple(self, tester):
-        tester.check()
+    @pytest.mark.missile
+    def test_missile_launched(self, tester):
+        tester.check_missile_launched()
+
+    @pytest.mark.simple
+    @pytest.mark.movements
+    def test_fighter_movements(self, tester):
+        tester.check_fighter_moved()
 

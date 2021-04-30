@@ -3,12 +3,13 @@ import pytesseract
 import cv2
 import constants
 from detectors import DetectorFactory, DetectorsEnum
-from utils import Base, Image, Colors, Keypoints, array_to_tuple
+from utils import Base, Image, Colors, Keypoints, array_to_tuple, Coordinates
 
 
 class ImageControl(Base):
     keypoints = None
     __image_cache = {}
+    __fighter_movements = set()
 
     def __init__(self, canvas_image):
         self.__canvas_image = canvas_image
@@ -17,10 +18,6 @@ class ImageControl(Base):
     def text_content(self):
         self.logger.debug("Reading the text on canvas")
         return pytesseract.image_to_string(self.data.original).lower()
-
-    def is_initial_screen_visible(self):
-        content = self.text_content
-        return "1981" in content or "1985" in content
 
     @property
     def data(self):
@@ -45,6 +42,8 @@ class ImageControl(Base):
                                                   .detect(threshold),
                                    DetectorFactory.create_detector(DetectorsEnum.Missile)
                                                   .detect(threshold))
+        if bool(self.keypoints.player):
+            self.__fighter_movements.add(Coordinates(self.keypoints.player[-1].pt[1], self.keypoints.player[-1].pt[0]))
 
     def draw_keypoints(self):
         image = self.data.original
@@ -60,3 +59,14 @@ class ImageControl(Base):
                 cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
             )
         return image
+
+    def is_initial_screen_visible(self):
+        content = self.text_content
+        return "1981" in content or "1985" in content
+
+    def is_missile_launched(self):
+        return self.keypoints.missile
+
+    def is_fighter_moved(self):
+        self.logger.critical(self.__fighter_movements)
+        return len(self.__fighter_movements) >= 2

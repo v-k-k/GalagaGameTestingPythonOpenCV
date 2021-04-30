@@ -53,8 +53,8 @@ class Game(Base):
                 cv2.imshow("Galaga", im_with_keypoints)
                 if cv2.waitKey(1) == ord('q'):
                     break
-            run = yield
-            self.logger.error(f"The coro counter is --> {run}")
-            if not run:
+            test_passed = yield
+            self.logger.error(f"Test pass status is --> {bool(test_passed)}")
+            if test_passed:
                 break
 

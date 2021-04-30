@@ -11,12 +11,25 @@ class Tester(Base):
     def check_initial_screen(self):
         self.game.check_initial_screen(attempts=1000)
 
-    def check(self):
-        p = self.game.check(criteria=None)
+    def __check(self, test_producer):
         while True:
             try:
-                next(p)
+                self.logger.debug(dir(test_producer))
+                next(test_producer)
                 sleep(1)
             except StopIteration:
                 break
 
+    def check_lives_visible(self):
+        # TODO
+        pass
+
+    def check_fighter_moved(self):
+        return self.__check(test_producer=self.game.check_fighter_movements())
+
+    def check_missile_launched(self):
+        return self.__check(test_producer=self.game.check_missile_launched())
+
+    def check_game_over(self):
+        # TODO
+        pass

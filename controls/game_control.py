@@ -1,6 +1,5 @@
 import pyautogui
 from time import sleep
-
 from .image_control import ImageControl
 from utils import Base, coroutine, Coordinates
 from utils.timeouts import Timeouts
@@ -9,7 +8,7 @@ from utils.timeouts import Timeouts
 class GameControl(Base):
     __image = None
     __game = None
-    __game_loop = None
+    __game_loop_consumer = None
     __CURRENT_PLAYER_AXIS_Y_POSITION = 0
 
     def __init__(self, target):
@@ -19,37 +18,13 @@ class GameControl(Base):
             self.__image.is_initial_screen_visible
         )
 
-    def check_initial_screen(self, attempts):
-        self.__game.pause_game()
-        for _ in range(attempts):
-            content = self.__image.text_content
-            if "start" in content or "stage 1" in content:
-                break
-            self.logger.error("No initial messages")
-            if not _ % 50:
-                self.__game.pause_game()
-                self.__game.pause_game()
-            sleep(Timeouts.MIN.value)
-        else:
-            raise AssertionError("Game wasn't initialized")
-
     @property
     def _game_loop(self):
-        if not self.__game_loop:
-            self.__game_loop = coroutine(self.__game.run_game_loop)(self.follow_and_destroy,
-                                                                    self.__image,
-                                                                    self.prevent_pause_click)
-        return self.__game_loop
-
-    def check(self, criteria: tuple):
-        a = 10  # # #
-        while True:
-            try:
-                self._game_loop.send(a)  # # #
-                yield
-            except StopIteration:
-                break
-            a -= 1  # # #
+        if not self.__game_loop_consumer:
+            self.__game_loop_consumer = coroutine(self.__game.run_game_loop)(self.follow_and_destroy,
+                                                                             self.__image,
+                                                                             self.prevent_pause_click)
+        return self.__game_loop_consumer
 
     @property
     def lowest_enemy_location(self):
@@ -123,3 +98,32 @@ class GameControl(Base):
         pyautogui.keyUp('right')
         pyautogui.keyUp('x')
         return self
+
+    def check_initial_screen(self, attempts):
+        self.__game.pause_game()
+        for _ in range(attempts):
+            content = self.__image.text_content
+            if "start" in content or "stage 1" in content:
+                break
+            self.logger.error("No initial messages")
+            if not _ % 10:
+                self.__game.pause_game()
+                self.__game.pause_game()
+            sleep(Timeouts.MIN.value)
+        else:
+            raise AssertionError("Game wasn't initialized")
+
+    def __check_producer(self, criteria: callable):
+        while True:
+            try:
+                self.logger.debug(criteria.__name__)
+                self._game_loop.send(criteria())
+                yield
+            except StopIteration:
+                break
+
+    def check_missile_launched(self):
+        return self.__check_producer(criteria=self.__image.is_missile_launched)
+
+    def check_fighter_movements(self):
+        return self.__check_producer(criteria=self.__image.is_fighter_moved)
